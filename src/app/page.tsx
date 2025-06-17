@@ -6,28 +6,6 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas-pro';
 
 // Utility to convert rupees to words
-interface InvoiceData {
-  number: string;
-  date: string;
-}
-
-interface SupplierData {
-  name: string;
-  gstin: string;
-  addr: string;
-}
-
-interface BuyerData {
-  name: string;
-  addr: string;
-}
-
-interface ItemData {
-  hsn: string;
-  desc: string;
-  amountUSD: number;
-}
-
 const toWords = (num: number): string => {
   const a: string[] = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
   const b: string[] = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
@@ -108,7 +86,7 @@ const [fxRate, setFxRate] = useState(() => {
 	}
 	return defaultFxRate;
 });
-const [lutId, setLutId] = useState(() => {
+const [lutId] = useState(() => {
 	if (typeof window !== 'undefined') {
 		const stored = localStorage.getItem('lutId');
 		return stored ? JSON.parse(stored) : defaultLutId;
