@@ -86,7 +86,7 @@ const [fxRate, setFxRate] = useState(() => {
 	}
 	return defaultFxRate;
 });
-const [lutId] = useState(() => {
+const [lutId, setLutId] = useState(() => {
 	if (typeof window !== 'undefined') {
 		const stored = localStorage.getItem('lutId');
 		return stored ? JSON.parse(stored) : defaultLutId;
@@ -181,8 +181,8 @@ const [lutId] = useState(() => {
       <Head>
         <title>Export Invoice Generator</title>
       </Head>
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-5xl mx-auto bg-white p-8 rounded-2xl shadow-xl">
+      <div className="min-h-screen bg-gray-50 md:p-6">
+        <div className="max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-xl">
           <h1 className="text-3xl font-bold mb-6 text-center">Export of Services – GST Tax Invoice</h1>
           {/* Form */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -251,6 +251,11 @@ const [lutId] = useState(() => {
               <input type="number" step="0.0001" value={fxRate} onChange={e => setFxRate(parseFloat(e.target.value))}
                 className="w-full mt-1 p-2 border rounded-xl" />
             </div>
+            <div>
+              <label className="font-semibold">LUT Id</label>
+              <input type="text" value={lutId} onChange={e => setLutId(e.target.value)}
+                className="w-full mt-1 p-2 border rounded-xl" />
+            </div>
             <div className="md:col-span-2 text-center mt-4">
               <button onClick={generate} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-2 rounded-2xl shadow-lg">
                 Generate Invoice
@@ -258,72 +263,76 @@ const [lutId] = useState(() => {
             </div>
           </div>
           {/* Invoice */}
-          <div ref={invoiceRef} id="invoice" className="border-2 border-dashed p-6 rounded-2xl">
-            <h2 className="text-xl font-bold text-center mb-4">TAX INVOICE</h2>
-            <p className="text-center italic mb-6">(Export of Services under LUT – IGST Not Payable)</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <h3 className="font-semibold">Supplier (Exporter)</h3>
-                <p>{supplier.name}</p>
-                <pre className="whitespace-pre-line text-sm">{supplier.addr}</pre>
-                <p>GSTIN: {supplier.gstin}</p>
+          <div>
+            <div ref={invoiceRef} id="invoice" className="border-2 border-dashed p-6 rounded-2xl scale-100 width-full md:scale-100">
+              <h2 className="text-xl font-bold text-center mb-4">TAX INVOICE</h2>
+              <p className="text-center italic mb-6">(Export of Services under LUT – IGST Not Payable)</p>
+              <div className="grid grid-cols-1 grid-cols-2 gap-4 text-sm">
+                <div>
+                  <h3 className="font-semibold">Supplier (Exporter)</h3>
+                  <p>{supplier.name}</p>
+                  <pre className="whitespace-pre-line text-sm">{supplier.addr}</pre>
+                  <p>GSTIN: {supplier.gstin}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold">Invoice Details</h3>
+                  <p>No.: {inv.number}</p>
+                  <p>Date: {formatDate(inv.date)}</p>
+                  <p>POS: 96 – Foreign Country</p>
+                  <p>Reverse Charge: No</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold">Invoice Details</h3>
-                <p>No.: {inv.number}</p>
-                <p>Date: {formatDate(inv.date)}</p>
-                <p>POS: 96 – Foreign Country</p>
-                <p>Reverse Charge: No</p>
-              </div>
-            </div>
-            <p className='text-sm mt-4 text-gray-600'>Letter of Undertaking (LUT) No.: {lutId}</p>
-            <p className='text-sm text-gray-600'>Export Declaration (Rule 96A): “Supply meant for export under LUT without
-            payment of integrated tax.”</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-4">
-              <div>
-                <h3 className="font-semibold">Recipient (Foreign Client)</h3>
-                <p className='mb-0 pb-0'>{buyer.name}</p>
-                <pre className="whitespace-pre-line text-sm">{buyer.addr}</pre>
-              </div>
+              <p className='text-sm mt-4 text-gray-600'>Letter of Undertaking (LUT) No.: {lutId}</p>
+              <p className='text-sm text-gray-600'>Export Declaration (Rule 96A): “Supply meant for export under LUT without
+              payment of integrated tax.”</p>
+              <div className="grid grid-cols-1 grid-cols-2 gap-4 text-sm mt-4">
+                <div>
+                  <h3 className="font-semibold">Recipient (Foreign Client)</h3>
+                  <p className='mb-0 pb-0'>{buyer.name}</p>
+                  <pre className="whitespace-pre-line text-sm">{buyer.addr}</pre>
+                </div>
 
-              <div>
-                <h3 className="font-semibold">Recipient GSTIN: URP</h3>
-                <p>Country: Brazil</p>
-                <p>Currency: USD</p>
-                <p>Conversion Rate (RBI TT-Selling): 1 USD = ₹{fxRate} ({formatDate(inv.date)})</p>
+                <div>
+                  <h3 className="font-semibold">Recipient GSTIN: URP</h3>
+                  <p>Country: Brazil</p>
+                  <p>Currency: USD</p>
+                  <p>Conversion Rate (RBI TT-Selling): 1 USD = ₹{fxRate} ({formatDate(inv.date)})</p>
+                </div>
               </div>
-            </div>
-            <table className="w-full mt-6 text-sm border">
-              <thead className="bg-gray-100 font-semibold">
-                <tr>
-                  <th className="p-2 border">S No</th>
-                  <th className="p-2 border">Description</th>
-                  <th className="p-2 border">HSN</th>
-                  <th className="p-2 border text-right">Amount (USD)</th>
-                  <th className="p-2 border text-right">Amount (INR)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="p-2 border">1</td>
-                  <td className="p-2 border">{item.desc}</td>
-                  <td className="p-2 border">{item.hsn}</td>
-                  <td className="p-2 border text-right">{'$'+ item.amountUSD.toFixed(2)}</td>
-                  <td className="p-2 border text-right">{'₹' + amountINR.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-                </tr>
-              </tbody>
-              <tfoot className="font-semibold">
-                <tr>
-                  <td colSpan={4} className="p-2 border text-right">Invoice Total (INR)</td>
-                  <td className="p-2 border text-right">{'₹' + amountINR.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-                </tr>
-              </tfoot>
-            </table>
-            <p className="mt-4 text-sm"><strong>Amount in words:</strong> {amountWords} only</p>
-            <p className="mt-8 text-sm">* This supply is zero-rated under Section 16 of the IGST Act 2017 under LUT without payment of tax.</p>
-            <div className="mt-10 text-right">
-              <p>For {supplier.name}</p>
-              <p className="italic">Authorised Signatory</p>
+              <div className="relative overflow-x-auto">
+                <table className="w-full mt-6 text-sm border">
+                  <thead className="bg-gray-100 font-semibold">
+                    <tr>
+                      <th className="p-2 border">S No</th>
+                      <th className="p-2 border">Description</th>
+                      <th className="p-2 border">HSN</th>
+                      <th className="p-2 border text-right">Amount (USD)</th>
+                      <th className="p-2 border text-right">Amount (INR)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="p-2 border">1</td>
+                      <td className="p-2 border">{item.desc}</td>
+                      <td className="p-2 border">{item.hsn}</td>
+                      <td className="p-2 border text-right">{'$'+ item.amountUSD.toFixed(2)}</td>
+                      <td className="p-2 border text-right">{'₹' + amountINR.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                    </tr>
+                  </tbody>
+                  <tfoot className="font-semibold">
+                    <tr>
+                      <td colSpan={4} className="p-2 border text-right">Invoice Total (INR)</td>
+                      <td className="p-2 border text-right">{'₹' + amountINR.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <p className="mt-4 text-sm"><strong>Amount in words:</strong> {amountWords} only</p>
+              <p className="mt-8 text-sm">* This supply is zero-rated under Section 16 of the IGST Act 2017 under LUT without payment of tax.</p>
+              <div className="mt-10 text-right">
+                <p>For {supplier.name}</p>
+                <p className="italic">Authorised Signatory</p>
+              </div>
             </div>
           </div>
           {/* Download PDF Button */}
