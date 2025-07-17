@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas-pro';
+import InvoiceList from '../components/InvoiceList';
+import { useInvoices } from '../hooks/useInvoices';
+import { useSession } from 'next-auth/react';
 
 // Utility to convert rupees to words
 const toWords = (num: number): string => {
@@ -96,8 +99,11 @@ const [lutId, setLutId] = useState(() => {
   const [amountINR, setAmountINR] = useState(item.amountUSD * fxRate);
   const [amountWords, setAmountWords] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const { data: session } = useSession();
+  const { createInvoice, refreshInvoices } = useInvoices();
   
   // Save state changes to localStorage
   useEffect(() => {
@@ -132,8 +138,38 @@ const [lutId, setLutId] = useState(() => {
 
   if (!mounted) return null;
 
-  const generate = () => {
+  const generate = async () => {
     // Recalc handled by useEffect
+    
+    // Save invoice to Firebase if user is logged in
+    if (session?.user?.id) {
+      try {
+        setSaving(true);
+        const invoiceData = {
+          clientName: buyer.name,
+          clientEmail: '',
+          clientAddress: buyer.addr,
+          issueDate: new Date(inv.date),
+          subtotal: amountINR,
+          tax: 0, // GST not applicable for LUT exports
+          total: amountINR,
+          notes: `HSN: ${item.hsn} | LUT: ${lutId} | FX Rate: ${fxRate} USD/INR`,
+          items: [{
+            description: item.desc,
+            quantity: 1,
+            rate: item.amountUSD,
+            amount: amountINR
+          }]
+        };
+        
+        await createInvoice(invoiceData);
+        await refreshInvoices();
+      } catch (error) {
+        console.error('Error saving invoice:', error);
+      } finally {
+        setSaving(false);
+      }
+    }
   };
 
   const formatDate = (dateStr: string): string => {
@@ -257,9 +293,18 @@ const [lutId, setLutId] = useState(() => {
                 className="w-full mt-1 p-2 border rounded-xl" />
             </div>
             <div className="md:col-span-2 text-center mt-4">
-              <button onClick={generate} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-2 rounded-2xl shadow-lg">
-                Generate Invoice
+              <button 
+                onClick={generate} 
+                disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold px-8 py-2 rounded-2xl shadow-lg"
+              >
+                {saving ? 'Saving...' : 'Generate Invoice'}
               </button>
+              {session && (
+                <p className="text-sm text-gray-600 mt-2">
+                  Invoice will be saved to your account
+                </p>
+              )}
             </div>
           </div>
           {/* Invoice */}
@@ -344,6 +389,11 @@ const [lutId, setLutId] = useState(() => {
               Download Invoice PNG
             </button>
           </div>
+        </div>
+        
+        {/* Invoice List */}
+        <div className="max-w-5xl mx-auto mt-8 bg-white p-6 rounded-2xl shadow-xl">
+          <InvoiceList />
         </div>
       </div>
     </>

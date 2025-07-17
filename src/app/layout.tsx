@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
+import Providers from "../components/Providers";
+import Login from "../components/Login";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +46,9 @@ const Navigation = () => (
             </div>
           </div>
         </div>
+        <div className="flex items-center">
+          <Login />
+        </div>
         {/* Mobile menu button - you can expand this later */}
         <div className="md:hidden">
           <div className="flex space-x-2">
@@ -76,8 +81,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navigation />
-        {children}
+        <Providers>
+          <Navigation />
+          {children}
+        </Providers>
       </body>
     </html>
   );

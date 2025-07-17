@@ -9,10 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@next-auth/firebase-adapter": "^2.0.1",
+    "date-fns": "^4.1.0",
+    "firebase": "^11.10.0",
     "html2canvas": "^1.4.1",
     "html2canvas-pro": "^1.5.11",
     "jspdf": "^3.0.1",
     "next": "15.3.3",
+    "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
