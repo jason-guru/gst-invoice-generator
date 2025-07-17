@@ -9,7 +9,8 @@ import {
   query, 
   where, 
   orderBy,
-  Timestamp 
+  Timestamp,
+  FieldValue 
 } from 'firebase/firestore'
 import { db } from '../../libs/firebase'
 
@@ -106,7 +107,7 @@ export const invoiceService = {
   // Update invoice
   async updateInvoice(invoiceId: string, updates: Partial<Omit<Invoice, 'id' | 'userId' | 'createdAt'>>): Promise<void> {
     const docRef = doc(db, 'invoices', invoiceId)
-    const updateData: any = {
+    const updateData: { [x: string]: FieldValue | Partial<unknown> | undefined } = {
       ...updates,
       updatedAt: Timestamp.fromDate(new Date())
     }

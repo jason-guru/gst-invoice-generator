@@ -142,7 +142,8 @@ const [lutId, setLutId] = useState(() => {
     // Recalc handled by useEffect
     
     // Save invoice to Firebase if user is logged in
-    if (session?.user?.id) {
+    const userId = (session?.user as any)?.id
+    if (userId) {
       try {
         setSaving(true);
         const invoiceData = {

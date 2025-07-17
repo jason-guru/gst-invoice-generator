@@ -3,9 +3,9 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { invoiceService } from '../../../services/invoiceService'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as any
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as any
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       tax: Number(tax) || 0,
       total: Number(total) || 0,
       notes,
-      items: items.map((item: any) => ({
+      items: items.map((item: { description: string; quantity: number; rate: number; amount: number }) => ({
         description: item.description,
         quantity: Number(item.quantity) || 1,
         rate: Number(item.rate) || 0,

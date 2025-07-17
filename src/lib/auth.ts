@@ -1,7 +1,6 @@
-import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -9,12 +8,12 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
   },
   callbacks: {
     session: async ({ session, token }: any) => {
       if (session?.user) {
-        session.user.id = token.sub
+        session.user.id = token.sub || ''
       }
       return session
     },

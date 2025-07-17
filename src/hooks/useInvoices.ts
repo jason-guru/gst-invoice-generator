@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { invoiceService, Invoice, InvoiceItem } from '../services/invoiceService'
 
@@ -8,19 +8,14 @@ export function useInvoices() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      loadInvoices()
-    } else {
-      setLoading(false)
-    }
-  }, [session])
-
-  const loadInvoices = async () => {
+  const loadInvoices = useCallback(async () => {
+    const userId = (session?.user as any)?.id
+    if (!userId) return
+    
     try {
       setLoading(true)
       setError(null)
-      const userInvoices = await invoiceService.getUserInvoices(session!.user!.id)
+      const userInvoices = await invoiceService.getUserInvoices(userId)
       setInvoices(userInvoices)
     } catch (error) {
       console.error('Error loading invoices:', error)
@@ -28,7 +23,16 @@ export function useInvoices() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session?.user])
+
+  useEffect(() => {
+    const userId = (session?.user as any)?.id
+    if (userId) {
+      loadInvoices()
+    } else {
+      setLoading(false)
+    }
+  }, [session?.user, loadInvoices])
 
   const createInvoice = async (invoiceData: {
     clientName: string
@@ -42,12 +46,13 @@ export function useInvoices() {
     notes?: string
     items: InvoiceItem[]
   }): Promise<Invoice> => {
-    if (!session?.user?.id) {
+    const userId = (session?.user as any)?.id
+    if (!userId) {
       throw new Error('User not authenticated')
     }
 
     try {
-      const newInvoice = await invoiceService.createInvoice(session.user.id, invoiceData)
+      const newInvoice = await invoiceService.createInvoice(userId, invoiceData)
       setInvoices(prev => [newInvoice, ...prev])
       return newInvoice
     } catch (error) {
