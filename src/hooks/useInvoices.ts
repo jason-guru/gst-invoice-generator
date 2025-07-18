@@ -35,14 +35,21 @@ export function useInvoices() {
   }, [session?.user, loadInvoices])
 
   const createInvoice = async (invoiceData: {
-    clientName: string
-    clientEmail?: string
-    clientAddress?: string
-    issueDate: Date
-    dueDate?: Date
-    subtotal: number
-    tax: number
-    total: number
+    invoiceNumber: string
+    invoiceDate: Date
+
+    supplierName: string
+    supplierAddress: string
+    supplierGSTIN: string
+
+    recipientName: string
+    recipientEmail?: string
+    recipientAddress: string
+    recipientCountry: string
+    recipientCurrency: string
+
+    fxRate: number
+    lutId: string
     notes?: string
     items: InvoiceItem[]
   }): Promise<Invoice> => {

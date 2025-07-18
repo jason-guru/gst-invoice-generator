@@ -16,6 +16,7 @@ import { db } from '../../libs/firebase'
 
 export interface InvoiceItem {
   description: string
+  hsn: string
   quantity: number
   rate: number
   amount: number
@@ -25,15 +26,20 @@ export interface Invoice {
   id?: string
   userId: string
   invoiceNumber: string
-  clientName: string
-  clientEmail?: string
-  clientAddress?: string
-  issueDate: Date
-  dueDate?: Date
-  subtotal: number
-  tax: number
-  total: number
-  status: 'draft' | 'sent' | 'paid'
+  invoiceDate: Date
+
+  supplierName: string
+  supplierAddress: string
+  supplierGSTIN: string
+
+  recipientName: string
+  recipientEmail?: string
+  recipientAddress: string
+  recipientCountry: string
+  recipientCurrency: string
+
+  fxRate: number
+  lutId: string
   notes?: string
   items: InvoiceItem[]
   createdAt: Date
@@ -42,23 +48,25 @@ export interface Invoice {
 
 export const invoiceService = {
   // Create invoice
-  async createInvoice(userId: string, invoiceData: Omit<Invoice, 'id' | 'userId' | 'invoiceNumber' | 'createdAt' | 'updatedAt' | 'status'> & { status?: 'draft' | 'sent' | 'paid' }): Promise<Invoice> {
+  async createInvoice(userId: string, invoiceData: Omit<Invoice, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<Invoice> {
     const invoice: Omit<Invoice, 'id'> = {
       ...invoiceData,
       userId,
-      invoiceNumber: `INV-${Date.now()}`,
       createdAt: new Date(),
       updatedAt: new Date(),
-      status: invoiceData.status || 'draft'
     }
     
-    const docRef = await addDoc(collection(db, 'invoices'), {
-      ...invoice,
-      createdAt: Timestamp.fromDate(invoice.createdAt),
-      updatedAt: Timestamp.fromDate(invoice.updatedAt),
-      issueDate: Timestamp.fromDate(invoice.issueDate),
-      dueDate: invoice.dueDate ? Timestamp.fromDate(invoice.dueDate) : null,
-    })
+    // Remove undefined values before saving to Firestore
+    const cleanedInvoice = Object.fromEntries(
+      Object.entries({
+        ...invoice,
+        createdAt: Timestamp.fromDate(invoice.createdAt),
+        updatedAt: Timestamp.fromDate(invoice.updatedAt),
+        invoiceDate: Timestamp.fromDate(invoice.invoiceDate),
+      }).filter(([, value]) => value !== undefined)
+    )
+    
+    const docRef = await addDoc(collection(db, 'invoices'), cleanedInvoice)
     
     return { id: docRef.id, ...invoice }
   },
@@ -79,8 +87,7 @@ export const invoiceService = {
         ...data,
         createdAt: data.createdAt.toDate(),
         updatedAt: data.updatedAt.toDate(),
-        issueDate: data.issueDate.toDate(),
-        dueDate: data.dueDate ? data.dueDate.toDate() : undefined,
+        invoiceDate: data.invoiceDate.toDate(),
       } as Invoice
     })
   },
@@ -97,8 +104,7 @@ export const invoiceService = {
         ...data,
         createdAt: data.createdAt.toDate(),
         updatedAt: data.updatedAt.toDate(),
-        issueDate: data.issueDate.toDate(),
-        dueDate: data.dueDate ? data.dueDate.toDate() : undefined,
+        invoiceDate: data.invoiceDate.toDate(),
       } as Invoice
     }
     return null
@@ -112,14 +118,16 @@ export const invoiceService = {
       updatedAt: Timestamp.fromDate(new Date())
     }
     
-    if (updates.issueDate) {
-      updateData.issueDate = Timestamp.fromDate(updates.issueDate)
-    }
-    if (updates.dueDate) {
-      updateData.dueDate = Timestamp.fromDate(updates.dueDate)
+    if (updates.invoiceDate) {
+      updateData.invoiceDate = Timestamp.fromDate(updates.invoiceDate)
     }
     
-    await updateDoc(docRef, updateData)
+    // Remove undefined values before updating Firestore
+    const cleanedUpdateData = Object.fromEntries(
+      Object.entries(updateData).filter(([, value]) => value !== undefined)
+    )
+    
+    await updateDoc(docRef, cleanedUpdateData)
   },
 
   // Delete invoice

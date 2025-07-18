@@ -126,8 +126,22 @@ export default function Home() {
         <title>Export Invoice Generator</title>
       </Head>
       <div className="min-h-screen bg-gray-50 md:p-6">
-        {/* Invoice List */}
         <div className="max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-xl">
+          <h1 className="text-3xl font-bold mb-6 text-center">Export of Services – GST Tax Invoice</h1>
+          
+          {/* Create Invoice Button */}
+          <div className="text-center mb-6">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-2xl shadow-lg"
+            >
+              Create New Invoice
+            </button>
+          </div>
+        </div>
+        
+        {/* Invoice List */}
+        <div className="max-w-5xl mx-auto mt-8 bg-white p-6 rounded-2xl shadow-xl">
           <InvoiceList />
         </div>
 

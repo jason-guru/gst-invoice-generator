@@ -29,37 +29,46 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { 
-      clientName, 
-      clientEmail, 
-      clientAddress,
-      issueDate, 
-      dueDate, 
-      subtotal,
-      tax,
-      total,
+      invoiceNumber,
+      invoiceDate,
+      supplierName,
+      supplierAddress,
+      supplierGSTIN,
+      recipientName,
+      recipientEmail,
+      recipientAddress,
+      recipientCountry,
+      recipientCurrency,
+      fxRate,
+      lutId,
       notes, 
       items 
     } = body
 
     // Validate required fields
-    if (!clientName || !items || !Array.isArray(items) || items.length === 0) {
+    if (!invoiceNumber || !supplierName || !recipientName || !items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ 
-        error: 'Missing required fields: clientName and items are required' 
+        error: 'Missing required fields: invoiceNumber, supplierName, recipientName, and items are required' 
       }, { status: 400 })
     }
 
     const invoiceData = {
-      clientName,
-      clientEmail,
-      clientAddress,
-      issueDate: new Date(issueDate),
-      dueDate: dueDate ? new Date(dueDate) : undefined,
-      subtotal: Number(subtotal) || 0,
-      tax: Number(tax) || 0,
-      total: Number(total) || 0,
+      invoiceNumber,
+      invoiceDate: new Date(invoiceDate),
+      supplierName,
+      supplierAddress,
+      supplierGSTIN,
+      recipientName,
+      recipientEmail,
+      recipientAddress,
+      recipientCountry,
+      recipientCurrency,
+      fxRate: Number(fxRate) || 0,
+      lutId,
       notes,
-      items: items.map((item: { description: string; quantity: number; rate: number; amount: number }) => ({
+      items: items.map((item: { description: string; hsn: string; quantity: number; rate: number; amount: number }) => ({
         description: item.description,
+        hsn: item.hsn,
         quantity: Number(item.quantity) || 1,
         rate: Number(item.rate) || 0,
         amount: Number(item.amount) || 0
