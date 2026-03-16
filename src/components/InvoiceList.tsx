@@ -45,19 +45,31 @@ export default function InvoiceList() {
       if (n < 100) return b[Math.floor(n/10)] + (n%10 ? ' ' + a[n%10] : '');
       return a[Math.floor(n/100)] + ' Hundred' + (n % 100 ? ' ' + seg(n % 100) : '');
     };
-    if (num === 0) return 'Zero';
-    let str: string = '';
-    const crore: number = Math.floor(num / 10000000);
-    const lakh: number = Math.floor((num / 100000) % 100);
-    const thousand: number = Math.floor((num / 1000) % 100);
-    const hundred: number = Math.floor((num / 100) % 10);
-    const rest: number = num % 100;
-    if (crore) str += seg(crore) + ' Crore ';
-    if (lakh) str += seg(lakh) + ' Lakh ';
-    if (thousand) str += seg(thousand) + ' Thousand ';
-    if (hundred) str += a[hundred] + ' Hundred ';
-    if (rest) str += (str ? 'and ' : '') + seg(rest);
-    return str.trim();
+    const rounded: number = Math.round((num + Number.EPSILON) * 100) / 100;
+    const rupees: number = Math.floor(rounded);
+    const paise: number = Math.round((rounded - rupees) * 100);
+
+    const rupeesToWords = (value: number): string => {
+      if (value === 0) return 'Zero';
+      let str: string = '';
+      const crore: number = Math.floor(value / 10000000);
+      const lakh: number = Math.floor((value / 100000) % 100);
+      const thousand: number = Math.floor((value / 1000) % 100);
+      const hundred: number = Math.floor((value / 100) % 10);
+      const rest: number = value % 100;
+      if (crore) str += seg(crore) + ' Crore ';
+      if (lakh) str += seg(lakh) + ' Lakh ';
+      if (thousand) str += seg(thousand) + ' Thousand ';
+      if (hundred) str += a[hundred] + ' Hundred ';
+      if (rest) str += (str ? 'and ' : '') + seg(rest);
+      return str.trim();
+    };
+
+    const words = rupeesToWords(rupees);
+    if (paise > 0) {
+      return `${words} and ${seg(paise)} Paise`;
+    }
+    return words;
   };
 
   const downloadPdf = async () => {
