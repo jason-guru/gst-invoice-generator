@@ -119,6 +119,26 @@ export default function InvoiceList() {
     setEditFormData({ ...invoice })
   }
 
+  const handleCopy = (invoice: Invoice) => {
+    setCreateFormData({
+      invoiceNumber: '',
+      invoiceDate: new Date().toISOString().slice(0, 10),
+      supplierName: invoice.supplierName,
+      supplierGSTIN: invoice.supplierGSTIN,
+      supplierAddress: invoice.supplierAddress,
+      recipientName: invoice.recipientName,
+      recipientEmail: invoice.recipientEmail || '',
+      recipientAddress: invoice.recipientAddress,
+      recipientCountry: invoice.recipientCountry,
+      recipientCurrency: invoice.recipientCurrency,
+      fxRate: invoice.fxRate,
+      lutId: invoice.lutId,
+      items: invoice.items.map(item => ({ ...item })),
+      notes: invoice.notes || ''
+    })
+    setShowCreateModal(true)
+  }
+
   const handleSaveEdit = async () => {
     if (!editFormData || !editFormData.id) return
     
@@ -354,13 +374,19 @@ export default function InvoiceList() {
                     >
                       View
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleEdit(invoice)}
                       className="text-green-600 hover:text-green-800 text-sm font-medium"
                     >
                       Edit
                     </button>
-                    <button 
+                    <button
+                      onClick={() => handleCopy(invoice)}
+                      className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                    >
+                      Copy
+                    </button>
+                    <button
                       onClick={() => handleDelete(invoice.id!)}
                       disabled={deletingInvoice === invoice.id}
                       className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50"
