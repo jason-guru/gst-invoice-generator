@@ -29,7 +29,7 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
 
   const { data: session } = useSession();
-  const { createInvoice, refreshInvoices } = useInvoices();
+  const { createInvoice } = useInvoices();
   
   useEffect(() => {
     setMounted(true);
@@ -91,7 +91,6 @@ export default function Home() {
       };
       
       await createInvoice(invoiceData);
-      await refreshInvoices();
       setShowCreateModal(false);
       // Reset form
       setCreateFormData({
