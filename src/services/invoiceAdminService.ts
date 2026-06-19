@@ -52,15 +52,27 @@ export const invoiceAdminService = {
     return { id: docRef.id, ...invoice }
   },
 
-  // List all invoices owned by `userId`, newest first.
-  async getUserInvoices(userId: string): Promise<Invoice[]> {
-    const snapshot = await adminDb
-      .collection(COLLECTION)
-      .where('userId', '==', userId)
+  // List one page of invoices owned by `userId`, newest first, along with the
+  // total count so the client can render pagination controls.
+  async getUserInvoices(
+    userId: string,
+    { page = 1, pageSize = 10 }: { page?: number; pageSize?: number } = {}
+  ): Promise<{ invoices: Invoice[]; total: number }> {
+    const base = adminDb.collection(COLLECTION).where('userId', '==', userId)
+
+    const countSnapshot = await base.count().get()
+    const total = countSnapshot.data().count
+
+    const snapshot = await base
       .orderBy('createdAt', 'desc')
+      .offset((page - 1) * pageSize)
+      .limit(pageSize)
       .get()
 
-    return snapshot.docs.map((doc) => toInvoice(doc.id, doc.data()))
+    return {
+      invoices: snapshot.docs.map((doc) => toInvoice(doc.id, doc.data())),
+      total,
+    }
   },
 
   // Fetch a single invoice, but only if it belongs to `userId`.

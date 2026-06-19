@@ -16,6 +16,8 @@ function reviveInvoice(raw: Record<string, unknown>): Invoice {
   } as Invoice
 }
 
+export const PAGE_SIZE = 10
+
 function useInvoicesState() {
   const { data: session } = useSession()
   // Key effects off the stable user id, not the session.user object. The object
@@ -25,24 +27,42 @@ function useInvoicesState() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
 
-  const loadInvoices = useCallback(async () => {
-    if (!userId) return
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
-    try {
-      setLoading(true)
-      setError(null)
-      const res = await fetch('/api/invoices')
-      if (!res.ok) throw new Error(`Failed to load invoices (${res.status})`)
-      const data = (await res.json()) as Record<string, unknown>[]
-      setInvoices(data.map(reviveInvoice))
-    } catch (error) {
-      console.error('Error loading invoices:', error)
-      setError('Failed to load invoices')
-    } finally {
-      setLoading(false)
-    }
-  }, [userId])
+  // Fetch a single page from the server. Defaults to the current page, but
+  // accepts an override so mutations can jump to a specific page atomically.
+  const loadInvoices = useCallback(
+    async (targetPage: number = page) => {
+      if (!userId) return
+
+      try {
+        setLoading(true)
+        setError(null)
+        const res = await fetch(`/api/invoices?page=${targetPage}&pageSize=${PAGE_SIZE}`)
+        if (!res.ok) throw new Error(`Failed to load invoices (${res.status})`)
+        const data = (await res.json()) as {
+          invoices: Record<string, unknown>[]
+          total: number
+        }
+        setInvoices(data.invoices.map(reviveInvoice))
+        setTotal(data.total)
+
+        // If the page is now past the end (e.g. the last item on it was
+        // deleted), step back to the last page that still has rows.
+        const lastPage = Math.max(1, Math.ceil(data.total / PAGE_SIZE))
+        if (targetPage > lastPage) setPage(lastPage)
+      } catch (error) {
+        console.error('Error loading invoices:', error)
+        setError('Failed to load invoices')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [userId, page]
+  )
 
   useEffect(() => {
     if (userId) {
@@ -87,7 +107,13 @@ function useInvoicesState() {
       throw new Error(message.error || 'Failed to create invoice')
     }
     const newInvoice = reviveInvoice(await res.json())
-    setInvoices((prev) => [newInvoice, ...prev])
+    // New invoices are newest-first, so they land on page 1. Jump there and
+    // reload from the server rather than splicing into the current page.
+    if (page === 1) {
+      await loadInvoices(1)
+    } else {
+      setPage(1)
+    }
     return newInvoice
   }
 
@@ -118,13 +144,20 @@ function useInvoicesState() {
       console.error('Error deleting invoice:', message)
       throw new Error(message.error || 'Failed to delete invoice')
     }
-    setInvoices((prev) => prev.filter((invoice) => invoice.id !== invoiceId))
+    // Reload the current page so the freed slot is backfilled from the next
+    // page (and we drop back a page if this emptied the last one).
+    await loadInvoices()
   }
 
   return {
     invoices,
     loading,
     error,
+    page,
+    setPage,
+    total,
+    totalPages,
+    pageSize: PAGE_SIZE,
     createInvoice,
     updateInvoice,
     deleteInvoice,

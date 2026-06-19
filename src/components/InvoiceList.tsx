@@ -12,7 +12,7 @@ import Image from 'next/image'
 
 export default function InvoiceList() {
   const { data: session } = useSession()
-  const { invoices, loading, error, deleteInvoice, updateInvoice, createInvoice, refreshInvoices } = useInvoices()
+  const { invoices, loading, error, page, setPage, total, totalPages, pageSize, deleteInvoice, updateInvoice, createInvoice } = useInvoices()
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null)
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null)
   const [deletingInvoice, setDeletingInvoice] = useState<string | null>(null)
@@ -36,6 +36,9 @@ export default function InvoiceList() {
     notes: ''
   });
   const invoiceRef = useRef<HTMLDivElement>(null);
+
+  // Pagination is driven by the server; `invoices` already holds just this page.
+  const pageStart = (page - 1) * pageSize;
 
   const toWords = (num: number): string => {
     const a: string[] = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
@@ -255,7 +258,6 @@ export default function InvoiceList() {
       };
       
       await createInvoice(invoiceData);
-      await refreshInvoices();
       setShowCreateModal(false);
       // Reset form
       setCreateFormData({
@@ -315,10 +317,10 @@ export default function InvoiceList() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Your Invoices</h2>
         <div className="text-sm text-gray-500">
-          {invoices.length} invoice{invoices.length !== 1 ? 's' : ''}
-          {invoices.length > 0 && (
+          {total} invoice{total !== 1 ? 's' : ''}
+          {total > 0 && (
             <span className="ml-2">
-              (Showing {Math.min(5, invoices.length)} of {invoices.length})
+              (Showing {pageStart + 1}–{pageStart + invoices.length} of {total})
             </span>
           )}
           <button
@@ -408,7 +410,40 @@ export default function InvoiceList() {
           ))}
         </div>
       )}
-      
+
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <button
+            onClick={() => setPage(Math.max(1, page - 1))}
+            disabled={page === 1}
+            className="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+            <button
+              key={pageNumber}
+              onClick={() => setPage(pageNumber)}
+              className={`px-3 py-1 rounded-md border text-sm font-medium ${
+                pageNumber === page
+                  ? 'bg-teal-600 border-teal-600 text-white'
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {pageNumber}
+            </button>
+          ))}
+          <button
+            onClick={() => setPage(Math.min(totalPages, page + 1))}
+            disabled={page === totalPages}
+            className="px-3 py-1 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+      )}
+
       {/* View Invoice Modal */}
       {viewingInvoice && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

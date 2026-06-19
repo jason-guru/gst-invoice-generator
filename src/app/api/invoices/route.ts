@@ -3,16 +3,29 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { invoiceAdminService } from '../../../services/invoiceAdminService'
 
-export async function GET() {
+const DEFAULT_PAGE_SIZE = 10
+const MAX_PAGE_SIZE = 100
+
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions) as any
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const invoices = await invoiceAdminService.getUserInvoices(session.user.id)
-    return NextResponse.json(invoices)
+    const { searchParams } = new URL(request.url)
+    const page = Math.max(1, Number(searchParams.get('page')) || 1)
+    const pageSize = Math.min(
+      MAX_PAGE_SIZE,
+      Math.max(1, Number(searchParams.get('pageSize')) || DEFAULT_PAGE_SIZE)
+    )
+
+    const { invoices, total } = await invoiceAdminService.getUserInvoices(
+      session.user.id,
+      { page, pageSize }
+    )
+    return NextResponse.json({ invoices, total, page, pageSize })
   } catch (error) {
     console.error('Error fetching invoices:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
