@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { createContext, createElement, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
 import { Invoice, InvoiceItem } from '../types/invoice'
 
@@ -16,14 +16,17 @@ function reviveInvoice(raw: Record<string, unknown>): Invoice {
   } as Invoice
 }
 
-export function useInvoices() {
+function useInvoicesState() {
   const { data: session } = useSession()
+  // Key effects off the stable user id, not the session.user object. The object
+  // reference changes whenever the session is re-fetched, which would otherwise
+  // re-trigger a full reload of all invoices on every page view.
+  const userId = (session?.user as { id?: string })?.id
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const loadInvoices = useCallback(async () => {
-    const userId = (session?.user as { id?: string })?.id
     if (!userId) return
 
     try {
@@ -39,16 +42,15 @@ export function useInvoices() {
     } finally {
       setLoading(false)
     }
-  }, [session?.user])
+  }, [userId])
 
   useEffect(() => {
-    const userId = (session?.user as { id?: string })?.id
     if (userId) {
       loadInvoices()
     } else {
       setLoading(false)
     }
-  }, [session?.user, loadInvoices])
+  }, [userId, loadInvoices])
 
   const createInvoice = async (invoiceData: {
     invoiceNumber: string
@@ -128,4 +130,24 @@ export function useInvoices() {
     deleteInvoice,
     refreshInvoices: loadInvoices,
   }
+}
+
+type InvoicesContextValue = ReturnType<typeof useInvoicesState>
+
+const InvoicesContext = createContext<InvoicesContextValue | null>(null)
+
+// Holds a single shared instance of the invoices state so the list is fetched
+// once and reused across every component, instead of each consumer mounting its
+// own copy of the hook and triggering a duplicate fetch.
+export function InvoicesProvider({ children }: { children: ReactNode }) {
+  const value = useInvoicesState()
+  return createElement(InvoicesContext.Provider, { value }, children)
+}
+
+export function useInvoices() {
+  const context = useContext(InvoicesContext)
+  if (!context) {
+    throw new Error('useInvoices must be used within an InvoicesProvider')
+  }
+  return context
 }
