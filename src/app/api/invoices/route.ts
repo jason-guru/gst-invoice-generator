@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { invoiceService } from '../../../services/invoiceService'
+import { invoiceAdminService } from '../../../services/invoiceAdminService'
 
 export async function GET() {
   try {
@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const invoices = await invoiceService.getUserInvoices(session.user.id)
+    const invoices = await invoiceAdminService.getUserInvoices(session.user.id)
     return NextResponse.json(invoices)
   } catch (error) {
     console.error('Error fetching invoices:', error)
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       }))
     }
 
-    const invoice = await invoiceService.createInvoice(session.user.id, invoiceData)
+    const invoice = await invoiceAdminService.createInvoice(session.user.id, invoiceData)
     return NextResponse.json(invoice, { status: 201 })
   } catch (error) {
     console.error('Error creating invoice:', error)
