@@ -4,7 +4,7 @@ import { useInvoices } from '../hooks/useInvoices'
 import { useSession } from 'next-auth/react'
 import { formatDistanceToNow } from 'date-fns'
 import { useState, useRef } from 'react'
-import { Invoice, InvoiceItem } from '../services/invoiceService'
+import { Invoice, InvoiceItem } from '../types/invoice'
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas-pro';
 import Image from 'next/image'
