@@ -22,6 +22,12 @@ export interface Invoice {
   recipientCountry: string
   recipientCurrency: string
 
+  // Optional links to the user's saved supplier/client entries. The
+  // denormalized supplier*/recipient* fields above remain authoritative —
+  // editing or deleting a saved entry never changes existing invoices.
+  supplierId?: string
+  clientId?: string
+
   fxRate: number
   lutId: string
   notes?: string

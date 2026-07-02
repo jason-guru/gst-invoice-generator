@@ -28,11 +28,29 @@ const Navigation = () => (
               >
                 GST Invoice
               </Link>
-              <Link 
-                href="/rcm" 
+              <Link
+                href="/rcm"
                 className="text-gray-700 hover:bg-gray-50 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 RCM Self-Invoice
+              </Link>
+              <Link
+                href="/invoices"
+                className="text-gray-700 hover:bg-gray-50 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Invoices
+              </Link>
+              <Link
+                href="/clients"
+                className="text-gray-700 hover:bg-gray-50 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Clients
+              </Link>
+              <Link
+                href="/suppliers"
+                className="text-gray-700 hover:bg-gray-50 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Suppliers
               </Link>
             </div>
           </div>
@@ -49,11 +67,29 @@ const Navigation = () => (
             >
               Home
             </Link>
-            <Link 
-              href="/rcm" 
+            <Link
+              href="/rcm"
               className="text-gray-700 hover:text-blue-600 px-2 py-1 rounded text-sm font-medium"
             >
               RCM
+            </Link>
+            <Link
+              href="/invoices"
+              className="text-gray-700 hover:text-blue-600 px-2 py-1 rounded text-sm font-medium"
+            >
+              Invoices
+            </Link>
+            <Link
+              href="/clients"
+              className="text-gray-700 hover:text-blue-600 px-2 py-1 rounded text-sm font-medium"
+            >
+              Clients
+            </Link>
+            <Link
+              href="/suppliers"
+              className="text-gray-700 hover:text-blue-600 px-2 py-1 rounded text-sm font-medium"
+            >
+              Suppliers
             </Link>
           </div>
         </div>

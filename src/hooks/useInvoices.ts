@@ -90,6 +90,10 @@ function useInvoicesState() {
     lutId: string
     notes?: string
     items: InvoiceItem[]
+
+    // Optional links to saved supplier/client entries (see types/invoice.ts).
+    supplierId?: string
+    clientId?: string
   }): Promise<Invoice> => {
     const userId = (session?.user as { id?: string })?.id
     if (!userId) {
