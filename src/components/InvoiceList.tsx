@@ -3,12 +3,37 @@
 import { useInvoices } from '../hooks/useInvoices'
 import { useSession } from 'next-auth/react'
 import { formatDistanceToNow } from 'date-fns'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Invoice, InvoiceItem } from '../types/invoice'
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas-pro';
 import Image from 'next/image'
 // import ImageUploader from './ImageUploader'
+
+function FxRateHint({
+  loading,
+  error,
+  sourceDate,
+}: {
+  loading: boolean
+  error: string | null
+  sourceDate: string | null
+}) {
+  if (loading) {
+    return <p className="mt-1 text-xs text-gray-500">Fetching USD/INR rate…</p>
+  }
+  if (error) {
+    return <p className="mt-1 text-xs text-amber-600">{error} — enter the rate manually.</p>
+  }
+  if (sourceDate) {
+    return (
+      <p className="mt-1 text-xs text-green-600">
+        Auto-filled from FBIL (rate as of {sourceDate}).
+      </p>
+    )
+  }
+  return null
+}
 
 export default function InvoiceList() {
   const { data: session } = useSession()
@@ -31,11 +56,52 @@ export default function InvoiceList() {
     recipientCountry: '',
     recipientCurrency: 'USD',
     fxRate: 86.50,
+    fxRateDate: '',
     lutId: '',
     items: [{ hsn: '', description: '', quantity: 1, rate: 0, amount: 0 }],
     notes: ''
   });
   const invoiceRef = useRef<HTMLDivElement>(null);
+
+  // USD/INR rate auto-fill from the invoice date (Frankfurter / FBIL).
+  const [fxLoading, setFxLoading] = useState(false);
+  const [fxError, setFxError] = useState<string | null>(null);
+  const [fxSourceDate, setFxSourceDate] = useState<string | null>(null);
+
+  // Fetch the USD->INR rate for `dateStr` (YYYY-MM-DD) and apply it to the given
+  // form. Always overwrites the current fxRate; the field stays hand-editable.
+  const fetchFxRate = async (dateStr: string, target: 'create' | 'edit') => {
+    if (!dateStr) return;
+    setFxLoading(true);
+    setFxError(null);
+    setFxSourceDate(null);
+    try {
+      const res = await fetch(`/api/exchange-rate?date=${encodeURIComponent(dateStr)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setFxError(data?.error || 'Could not fetch the exchange rate');
+        return;
+      }
+      setFxSourceDate(data.date);
+      if (target === 'create') {
+        setCreateFormData(prev => ({ ...prev, fxRate: data.rate, fxRateDate: data.date }));
+      } else {
+        setEditFormData(prev => (prev ? { ...prev, fxRate: data.rate, fxRateDate: data.date } : prev));
+      }
+    } catch {
+      setFxError('Could not fetch the exchange rate');
+    } finally {
+      setFxLoading(false);
+    }
+  };
+
+  // For a new invoice, auto-fill the rate for the date the modal opens with
+  // (today by default). Edits keep their saved rate until the user changes the
+  // date. Runs only on open.
+  useEffect(() => {
+    if (showCreateModal) fetchFxRate(createFormData.invoiceDate, 'create');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCreateModal]);
 
   // Pagination is driven by the server; `invoices` already holds just this page.
   const pageStart = (page - 1) * pageSize;
@@ -117,12 +183,20 @@ export default function InvoiceList() {
     setViewingInvoice(invoice)
   }
 
+  const resetFxHint = () => {
+    setFxLoading(false)
+    setFxError(null)
+    setFxSourceDate(null)
+  }
+
   const handleEdit = (invoice: Invoice) => {
+    resetFxHint()
     setEditingInvoice(invoice)
     setEditFormData({ ...invoice })
   }
 
   const handleCopy = (invoice: Invoice) => {
+    resetFxHint()
     setCreateFormData({
       invoiceNumber: '',
       invoiceDate: new Date().toISOString().slice(0, 10),
@@ -135,6 +209,7 @@ export default function InvoiceList() {
       recipientCountry: invoice.recipientCountry,
       recipientCurrency: invoice.recipientCurrency,
       fxRate: invoice.fxRate,
+      fxRateDate: invoice.fxRateDate || '',
       lutId: invoice.lutId,
       items: invoice.items.map(item => ({ ...item })),
       notes: invoice.notes || ''
@@ -252,6 +327,7 @@ export default function InvoiceList() {
         recipientCountry: createFormData.recipientCountry,
         recipientCurrency: createFormData.recipientCurrency,
         fxRate: createFormData.fxRate,
+        fxRateDate: createFormData.fxRateDate || undefined,
         lutId: createFormData.lutId,
         items: createFormData.items,
         notes: createFormData.notes
@@ -272,10 +348,12 @@ export default function InvoiceList() {
         recipientCountry: '',
         recipientCurrency: 'USD',
         fxRate: 86.50,
+        fxRateDate: '',
         lutId: '',
         items: [{ hsn: '', description: '', quantity: 1, rate: 0, amount: 0 }],
         notes: ''
       });
+      resetFxHint();
     } catch (error) {
       console.error('Error creating invoice:', error);
       alert('Failed to create invoice. Please try again.');
@@ -324,7 +402,7 @@ export default function InvoiceList() {
             </span>
           )}
           <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => { resetFxHint(); setShowCreateModal(true); }}
               className="bg-teal-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-md shadow-lg ml-3"
             >
               Create New Invoice
@@ -492,7 +570,11 @@ export default function InvoiceList() {
                         <h3 className="font-semibold">Recipient GSTIN: URP</h3>
                         <p>Country: Brazil</p>
                         <p>Currency: USD</p>
-                        <p>Conversion Rate (RBI TT-Selling): 1 USD = ₹{viewingInvoice.fxRate} ({typeof viewingInvoice.invoiceDate === 'string' ? viewingInvoice.invoiceDate : new Date(viewingInvoice.invoiceDate).toLocaleDateString('en-GB')})</p>
+                        <p>Conversion Rate (RBI TT-Selling): 1 USD = ₹{viewingInvoice.fxRate} ({
+                          viewingInvoice.fxRateDate
+                            ? new Date(viewingInvoice.fxRateDate).toLocaleDateString('en-GB')
+                            : (typeof viewingInvoice.invoiceDate === 'string' ? viewingInvoice.invoiceDate : new Date(viewingInvoice.invoiceDate).toLocaleDateString('en-GB'))
+                        })</p>
                       </div>
                     </div>
                     <div className="relative overflow-x-auto">
@@ -603,12 +685,15 @@ export default function InvoiceList() {
                       <input
                         type="date"
                         value={new Date(editFormData.invoiceDate).toISOString().split('T')[0]}
-                        onChange={(e) => handleInputChange('invoiceDate', new Date(e.target.value))}
+                        onChange={(e) => {
+                          handleInputChange('invoiceDate', new Date(e.target.value))
+                          fetchFxRate(e.target.value, 'edit')
+                        }}
                         className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">FX Rate</label>
+                      <label className="block text-sm font-medium text-gray-700">FX Rate (1 USD = ₹)</label>
                       <input
                         type="number"
                         step="0.01"
@@ -616,6 +701,7 @@ export default function InvoiceList() {
                         onChange={(e) => handleInputChange('fxRate', parseFloat(e.target.value))}
                         className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                       />
+                      <FxRateHint loading={fxLoading} error={fxError} sourceDate={fxSourceDate} />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">LUT ID</label>
@@ -863,12 +949,15 @@ export default function InvoiceList() {
                         <input
                           type="date"
                           value={createFormData.invoiceDate}
-                          onChange={(e) => handleCreateInputChange('invoiceDate', e.target.value)}
+                          onChange={(e) => {
+                            handleCreateInputChange('invoiceDate', e.target.value)
+                            fetchFxRate(e.target.value, 'create')
+                          }}
                           className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">FX Rate</label>
+                        <label className="block text-sm font-medium text-gray-700">FX Rate (1 USD = ₹)</label>
                         <input
                           type="number"
                           step="0.01"
@@ -876,6 +965,7 @@ export default function InvoiceList() {
                           onChange={(e) => handleCreateInputChange('fxRate', parseFloat(e.target.value))}
                           className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                         />
+                        <FxRateHint loading={fxLoading} error={fxError} sourceDate={fxSourceDate} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">LUT ID</label>

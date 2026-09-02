@@ -23,6 +23,9 @@ export interface Invoice {
   recipientCurrency: string
 
   fxRate: number
+  // Actual publication date of the fetched USD/INR rate (YYYY-MM-DD). May be
+  // earlier than invoiceDate when the rate for that day was unavailable.
+  fxRateDate?: string
   lutId: string
   notes?: string
   items: InvoiceItem[]
