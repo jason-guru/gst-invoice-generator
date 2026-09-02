@@ -53,9 +53,10 @@ export async function POST(request: NextRequest) {
       recipientCountry,
       recipientCurrency,
       fxRate,
+      fxRateDate,
       lutId,
-      notes, 
-      items 
+      notes,
+      items
     } = body
 
     // Validate required fields
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
       recipientCountry,
       recipientCurrency,
       fxRate: Number(fxRate) || 0,
+      ...(typeof fxRateDate === 'string' && fxRateDate ? { fxRateDate } : {}),
       lutId,
       notes,
       items: items.map((item: { description: string; hsn: string; quantity: number; rate: number; amount: number }) => ({

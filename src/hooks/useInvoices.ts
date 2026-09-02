@@ -87,6 +87,7 @@ function useInvoicesState() {
     recipientCurrency: string
 
     fxRate: number
+    fxRateDate?: string
     lutId: string
     notes?: string
     items: InvoiceItem[]

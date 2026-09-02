@@ -57,6 +57,7 @@ export async function PUT(
       'recipientCountry',
       'recipientCurrency',
       'fxRate',
+      'fxRateDate',
       'lutId',
       'notes',
       'items',
