@@ -570,11 +570,7 @@ export default function InvoiceList() {
                         <h3 className="font-semibold">Recipient GSTIN: URP</h3>
                         <p>Country: Brazil</p>
                         <p>Currency: USD</p>
-                        <p>Conversion Rate (RBI TT-Selling): 1 USD = ₹{viewingInvoice.fxRate} ({
-                          viewingInvoice.fxRateDate
-                            ? new Date(viewingInvoice.fxRateDate).toLocaleDateString('en-GB')
-                            : (typeof viewingInvoice.invoiceDate === 'string' ? viewingInvoice.invoiceDate : new Date(viewingInvoice.invoiceDate).toLocaleDateString('en-GB'))
-                        })</p>
+                        <p>Conversion Rate (RBI TT-Selling): 1 USD = ₹{viewingInvoice.fxRate}</p>
                       </div>
                     </div>
                     <div className="relative overflow-x-auto">
